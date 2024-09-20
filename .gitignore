@@ -1,0 +1,8 @@
+.vscode/
+Include/
+Lib/
+Scripts/
+GeoLite2-ASN.mmdb
+GeoLite2-City.mmdb
+*.code-workspace
+pyvenv.cfg
