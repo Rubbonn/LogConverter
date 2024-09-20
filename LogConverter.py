@@ -56,7 +56,7 @@ if __name__ == '__main__':
 		arguments.output.unlink(True)
 	try:
 		database: sqlite3.Connection = sqlite3.connect(arguments.output)
-		querys: str = Path('create_database.sql').read_text()
+		querys: str = Path(__file__).resolve().with_name('create_database.sql').read_text()
 		database.executescript(querys)
 		database.commit()
 	except Exception as e:
