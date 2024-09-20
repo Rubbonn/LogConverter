@@ -1,6 +1,6 @@
 # This is a basic workflow that is manually triggered
 
-name: Manual workflow
+name: Build binaries
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
@@ -9,14 +9,9 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "greet"
   build-windows:
-    # The type of runner that the job will run on
     runs-on: windows-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Runs a single command using the runners shell
     - name: Checkout repo
       uses: actions/checkout@v4
     - name: Setup python
@@ -28,9 +23,30 @@ jobs:
         python -m pip install --upgrade pip pyinstaller
         pip install -r requirements.txt
     - name: Build
-      run: pyinstaller -F LogConverter.py
+      run: pyinstaller -F --add-data create_database.sql:. LogConverter.py
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         name: LogConverter.exe
-        path: dist/Logconverter.exe
+        path: dist/LogConverter.exe
+  
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+    - name: Setup python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install requirements
+      run: |
+        python -m pip install --upgrade pip pyinstaller
+        pip install -r requirements.txt
+    - name: Build
+      run: pyinstaller -F --add-data create_database.sql:. LogConverter.py
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: LogConverter
+        path: dist/LogConverter
