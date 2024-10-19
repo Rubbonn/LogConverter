@@ -19,7 +19,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: LogConverter.exe
+        name: LogConverter-windows-x64.exe
         path: dist/LogConverter.exe
   
   build-linux:
@@ -32,5 +32,18 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: LogConverter
+        name: LogConverter-linux-x64
+        path: dist/LogConverter
+  
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+    - name: Setup environment
+      uses: ./.github/actions/setup-environment
+    - name: Upload binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: LogConverter-macos-x64
         path: dist/LogConverter
