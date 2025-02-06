@@ -18,8 +18,8 @@ if __name__ == '__main__':
 	parser: ArgumentParser = ArgumentParser('Log Converter', description='Convert easily apache logs into databases to better analyze them')
 	parser.add_argument('logfile', help='Log file to convert', type=Path)
 	parser.add_argument('-o', '--output', help='Output file (default: name_of_log.sqlite3)', type=Path, default=None)
-	parser.add_argument('-g', '--geolocate', help='Path to a MaxMind GeoIP City database to geolocate ip addresses found', type=Path, default=None)
-	parser.add_argument('-a', '--asn', help='Path to a MaxMind GeoIP ASN database to geolocate ip addresses found', type=Path, default=None)
+	parser.add_argument('-g', '--geolocate', help='Path to a MaxMind GeoIP City database to geolocate ip addresses found', type=Path, default=Path('GeoLite2-City.mmdb'))
+	parser.add_argument('-a', '--asn', help='Path to a MaxMind GeoIP ASN database to geolocate ip addresses found', type=Path, default=Path('GeoLite2-ASN.mmdb'))
 	parser.add_argument('-f', '--format', help='Custom log format (default COMBINED: %(default)s)', type=str, default=COMBINED)
 	arguments = parser.parse_args()
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 		arguments.output = Path(arguments.logfile.name + '.sqlite3').resolve()
 
 	ipLocator = None
-	if arguments.geolocate is not None:
+	if arguments.geolocate is not None and arguments.geolocate.exists():
 		if not arguments.geolocate.is_file():
 			parser.error('Parameter geolocate is not a valid file')
 		try:
@@ -41,7 +41,7 @@ if __name__ == '__main__':
 			parser.error('Parameter geolocate is not a valid City database')
 
 	asnLocator = None
-	if arguments.asn is not None:
+	if arguments.asn is not None and arguments.asn.exists():
 		if not arguments.asn.is_file():
 			parser.error('Parameter asn is not a valid file')
 		try:
