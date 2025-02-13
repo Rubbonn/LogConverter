@@ -83,7 +83,7 @@ if __name__ == '__main__':
 	totale: int = contaLinee(arguments.logfile)
 	cpuFactor: int = cpu_count() ** 2
 	batchSize: int = totale // cpuFactor
-	chunkSize: int = batchSize // cpuFactor
+	chunkSize: int = -(batchSize // -cpuFactor)
 
 	with open(arguments.logfile, 'r') as file:
 		with Pool() as p:
