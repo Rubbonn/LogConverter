@@ -29,6 +29,7 @@ if __name__ == '__main__':
 		parser.error('Parameter logfile is not a valid file')
 
 	if arguments.output is None:
+		# TODO il file di destinazione deve andare nella stessa cartella del file di origine
 		arguments.output = Path(arguments.logfile.name + '.sqlite3').resolve()
 
 	ipLocator = None
@@ -68,9 +69,21 @@ if __name__ == '__main__':
 	from itertools import batched
 	from time import time
 	from contextlib import suppress
+	from psutil import virtual_memory
+	from sys import getsizeof
 
 	sqlite3.register_adapter(datetime.datetime, lambda val: val.isoformat())
 
+	def stimaMemoriaPerLinea(filePath: any, campione: int = 1000) -> int:
+		memoria: int = 0
+		with open(filePath, 'rb') as file:
+			for _ in range(campione):
+				linea = file.readline()
+				if not linea:
+					break
+				memoria += getsizeof(linea)
+		return memoria / campione if campione else 1
+	
 	def contaLinee(filePath: any) -> int:
 		linee = 0
 		with open(filePath, 'rb', buffering=0) as file:
@@ -79,34 +92,64 @@ if __name__ == '__main__':
 				linee += blocco.count(b'\n')
 				blocco = file.read(1024**2)
 		return linee
+	
+	memoriaDisponibile: int = virtual_memory().available * 0.8
+	memoriaPerLinea: int = stimaMemoriaPerLinea(arguments.logfile)
+	massimoLineeInMemoria: int = int(memoriaDisponibile // memoriaPerLinea)
 
-	totale: int = contaLinee(arguments.logfile)
-	cpuFactor: int = cpu_count() ** 2
-	batchSize: int = totale // cpuFactor
-	chunkSize: int = -(batchSize // -cpuFactor)
+	totaleLinee: int = contaLinee(arguments.logfile)
+	batchSize: int = max(1, massimoLineeInMemoria // cpu_count())
+	chunkSize: int = max(1, batchSize // cpu_count())
+
+	print(f'Elaborazione di {totaleLinee} linee con {cpu_count()} core, {batchSize} linee per batch e {chunkSize} linee per core')
+	print(f'Stima memoria per linea: {memoriaPerLinea} byte, memoria disponibile: {memoriaDisponibile} byte')
 
 	with open(arguments.logfile, 'r') as file:
 		with Pool() as p:
 			contatore: int = 1
 			startProcess: float = time()
 			for batch in batched(file, batchSize):
-				for parsed in p.imap(parseLine, ((line, arguments.format) for line in batch), chunksize=chunkSize):
+				for parsed in p.imap_unordered(parseLine, ((line, arguments.format) for line in batch), chunksize=chunkSize):
 					if isinstance(parsed, LogEntry):
 						requestId = database.execute('INSERT INTO requests VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)', (parsed.request_time, parsed.remote_host, parsed.request_line, parsed.final_status, parsed.bytes_sent, parsed.remote_user, parsed.entry)).lastrowid
 						database.executemany('INSERT INTO headers VALUES (?, ?, ?)', ((requestId, header, value) for header, value in parsed.headers_in.items()))
+						data: dict = {
+							'ip_address': parsed.remote_host,
+							'city': None,
+							'postal': None,
+							'country': None,
+							'continent': None,
+							'latitude': None,
+							'longitude': None,
+							'radius': None,
+							'asn': None,
+							'asn_org': None
+						}
 						if ipLocator is not None:
 							with suppress(geoip2.errors.AddressNotFoundError):
 								ipLocation: geoip2.models.City = ipLocator.city(parsed.remote_host)
-								database.execute('INSERT OR REPLACE INTO ip_geolocation (ip_address, city, postal, country, continent, latitude, longitude, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (ipLocation.traits.ip_address, ipLocation.city.name, ipLocation.postal.code, ipLocation.country.name, ipLocation.continent.name, ipLocation.location.latitude, ipLocation.location.longitude, ipLocation.location.accuracy_radius))
+								data.update({
+									'city': ipLocation.city.name,
+									'postal': ipLocation.postal.code,
+									'country': ipLocation.country.name,
+									'continent': ipLocation.continent.name,
+									'latitude': ipLocation.location.latitude,
+									'longitude': ipLocation.location.longitude,
+									'radius': ipLocation.location.accuracy_radius
+								})
 						if asnLocator is not None:
 							with suppress(geoip2.errors.AddressNotFoundError):
 								asnLocation: geoip2.models.ASN = asnLocator.asn(parsed.remote_host)
-								database.execute('INSERT OR REPLACE INTO ip_geolocation (ip_address, asn, asn_org) VALUES (?, ?, ?)', (asnLocation.ip_address, asnLocation.autonomous_system_number, asnLocation.autonomous_system_organization))
+								data.update({
+									'asn': asnLocation.autonomous_system_number,
+									'asn_org': asnLocation.autonomous_system_organization
+								})
+						database.execute('INSERT OR REPLACE INTO ip_geolocation VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (data['ip_address'], data['city'], data['postal'], data['country'], data['continent'], data['latitude'], data['longitude'], data['radius'], data['asn'], data['asn_org']))
 					elif isinstance(parsed, str):
 						database.execute('INSERT INTO requests (raw_line) VALUES (?)', (parsed,))
 					contatore += 1
 					elapsed: float = time() - startProcess
-					print(f'{contatore}/{totale} {contatore//elapsed:.0f}r/s {elapsed:.0f}s', end='\r')
+					print(f'{contatore}/{totaleLinee} {contatore//elapsed:.0f}r/s {elapsed:.0f}s', end='\r')
 				database.commit()
 
 	# Cleanup and close
