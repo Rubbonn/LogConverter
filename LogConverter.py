@@ -28,11 +28,8 @@ if __name__ == '__main__':
 	print('Controllo parametri...')
 	if not arguments.logfile.is_file():
 		parser.error('Parameter logfile is not a valid file')
-
 	if arguments.output is None:
-		# TODO il file di destinazione deve andare nella stessa cartella del file di origine
-		arguments.output = Path(arguments.logfile.name + '.sqlite3').resolve()
-
+		arguments.output = Path(arguments.logfile.with_suffix(''.join(arguments.logfile.suffixes) + '.sqlite3')).resolve()
 	ipLocator = None
 	if arguments.geolocate is not None and arguments.geolocate.exists():
 		if not arguments.geolocate.is_file():
