@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from argparse import ArgumentParser
 from pathlib import Path
 from apachelogs import COMBINED, parse, LogEntry
@@ -93,7 +94,7 @@ if __name__ == '__main__':
 				blocco = file.read(1024**2)
 		return linee
 	
-	memoriaDisponibile: int = virtual_memory().available * 0.8
+	memoriaDisponibile: int = virtual_memory().available * 0.7
 	memoriaPerLinea: int = stimaMemoriaPerLinea(arguments.logfile)
 	massimoLineeInMemoria: int = int(memoriaDisponibile // memoriaPerLinea)
 

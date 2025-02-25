@@ -1,6 +1,9 @@
 .vscode/
+bin/
 Include/
 Lib/
+lib/
+lib64/
 Scripts/
 GeoLite2-ASN.mmdb
 GeoLite2-City.mmdb
