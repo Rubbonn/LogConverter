@@ -2,10 +2,11 @@
 bin/
 Include/
 Lib/
-lib/
+lib
 lib64/
 Scripts/
 GeoLite2-ASN.mmdb
 GeoLite2-City.mmdb
 *.code-workspace
 pyvenv.cfg
+lib64
