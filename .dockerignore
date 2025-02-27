@@ -1,0 +1,14 @@
+.vscode
+.github
+.git
+.gitignore
+.dockerignore
+bin
+Include
+Lib
+lib
+lib64
+Scripts
+*.code-workspace
+pyvenv.cfg
+Dockerfile
