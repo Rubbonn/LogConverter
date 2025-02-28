@@ -27,3 +27,7 @@ CREATE TABLE ip_geolocation (
 	asn INTEGER,
 	asn_org TEXT
 );
+
+CREATE INDEX idx_requests_date_received ON requests (date_received);
+CREATE INDEX idx_requests_ip_address ON requests (ip_address);
+CREATE INDEX idx_requests_request ON requests (request);
