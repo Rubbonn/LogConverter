@@ -1,6 +1,5 @@
-FROM alpine:latest
+FROM python:3.13-trixie
 COPY . /app
-WORKDIR /app
-RUN mkdir /data && apk update && apk add --no-cache python3 gcc python3-dev linux-headers musl-dev py3-pip && pip install -r requirements.txt --break-system-packages
 WORKDIR /data
+RUN pip install -r /app/requirements.txt --break-system-packages
 ENTRYPOINT ["python3", "/app/LogConverter.py"]
