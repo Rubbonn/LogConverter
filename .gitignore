@@ -1,3 +1,5 @@
+.sonar
+.idea
 .vscode
 .venv
 GeoLite2-ASN.mmdb
